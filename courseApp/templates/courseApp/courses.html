@@ -1,0 +1,59 @@
+{% extends "courseApp/main.html" %}
+
+
+{% block  content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col">
+            <form action="" method="GET">
+                {% csrf_token %}
+                {{searchFilter.form.as_p}}
+                <button type="submit" class="btn btn-dark">Search</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+    {% if  request.user.is_staff %}
+    <a href="{% url "createCourse" %}"><button type="button" class="btn btn-primary">Create Course</button></a>
+    {% endif %}
+    <table class="table table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Instrucor</th>
+            <th scope="col">Capacity</th>
+            <th scope="col">Time</th>
+            <th scope="col">days</th>
+            <th> </th>
+            <th> </th>
+            <th> </th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in Course %}
+        <tr>
+            <th scope="row">{{ item.code }}</th>
+            <td>{{ item.name }}</td>
+            <td>{{ item.instructor }}</td>
+            <td>  {{ item.registered_students_count }}  / {{ item.capacity }}</td>
+            {% if item.scheduleID.days and item.scheduleID.startTime %}
+            <td>{{ item.scheduleID.startTime }} to {{ item.scheduleID.endTime }}</td>
+            <td>{{ item.scheduleID.days }}</td>
+            {% else %}
+            <td></td>
+            <td></td>
+            {% endif %} 
+            <td><a href={% url "course" item.code %}><button type="button" class="btn btn-dark">view Details</button></a></td>
+            {% if  request.user.is_staff %}
+            <td><a href={% url "editCourse" item.code %}><i class="fa-solid fa-file-pen" style="color: #172640;"></i></a></td>
+            <td><a href="{% url "deleteCourse" item.code %}"><i class="fa-solid fa-trash" style="color: #cc3838;"></i></a></td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock content %}

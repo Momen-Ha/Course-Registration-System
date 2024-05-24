@@ -1,0 +1,24 @@
+{% extends "courseApp/main.html" %}
+{% load static %}
+
+{% block content %}
+<form action="" method="POST">
+    {% csrf_token %}
+    {{ form.name.label }}
+    {{ form.name }}
+    <br>
+    {{ form.username.label }}
+    {{ form.username }}
+    <br>
+    {{ form.email.label }}
+    {{ form.email }}
+    <br>
+    {{ form.password.label }}
+    {{ form.password }}
+    <br>
+    
+    
+    <button type="submit" class="btn btn-primary">Create</button>
+
+    {{ form.errors }}
+{% endblock content %}

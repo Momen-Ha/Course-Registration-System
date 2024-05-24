@@ -1,0 +1,24 @@
+{% extends "courseApp/main.html" %}
+{% load static %}
+
+{% block content %}
+<form action="" method="POST">
+    {% csrf_token %}
+    <div class="mt-5 ms-4">
+        <div class="mb-3">
+            <label for="course" class="form-label">Student</label>
+            {{ form.student }}
+        </div>
+        <div class="mb-3">
+            <label for="course" class="form-label">Course</label>
+            {{ form.course }}
+        </div>
+        <div class="mb-3">
+            <label for="completed" class="form-label">Completed</label>
+            {{ form.completed }}
+        </div>
+        <button type="submit" class="btn btn-primary">Add</button>
+    </div>
+</form>
+
+{% endblock content %}

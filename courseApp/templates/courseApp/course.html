@@ -1,0 +1,23 @@
+{% extends "courseApp/main.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1>{{ Course.name }}</h1>
+    <h5>Instructor: {{ Course.instructor }}</h5>
+    <h5>Description: {{ Course.description }}</h5>
+    <h5>Capacity: {{ Course.capacity }}</h5>
+    <h5>Prerequisites:</h5>
+    <ul>
+        {% for prerequisite in Course.prerequisites.all %}
+            <li>{{ prerequisite.name }}</li>
+        {% empty %}
+            <li>No prerequisites</li>
+        {% endfor %}
+    </ul>
+    {% if request.user.is_staff %}
+    <a href="{% url 'editCourse' Course.code %}"><button type="button" class="btn btn-primary">Edit</button></a>
+    {% endif %} 
+</div>
+
+{% endblock content %}

@@ -1,0 +1,21 @@
+{% extends "courseApp/main.html" %}
+{% load static %}
+
+{% block content %}
+<h1> Course Confirmation</h1>
+<p>Are you sure you want to add the course: {{ course.name }}?</p>
+
+{% if conflict %}
+    <div class="alert alert-danger">
+        <strong>Warning!</strong> This course conflicts with another course in your schedule.
+    </div>
+    <a href="{% url 'student' student.id %}" class="btn btn-primary">Cancel</a>
+{% else %}
+    <form action="" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Confirm</button>
+    </form>
+    <a href="{% url 'student' student.id %}" class="btn btn-primary">Cancel</a>
+{% endif %}
+
+{% endblock content %}

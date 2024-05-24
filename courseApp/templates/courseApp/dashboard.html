@@ -1,0 +1,94 @@
+{% extends "courseApp/main.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mt-5 px-5">Dashboard</h1>
+            <br>
+            <div class="card col-3">
+                <div class="card-body">
+                    <h4 class="card-title">Number of Students</h4>
+                    <p class="card-text">{{ studentsNumber }}</p>
+                </div>
+            </div>
+            <div class="card col-3">
+                <div class="card-body">
+                    <h4 class="card-title">Number of Courses</h4>
+                    <p class="card-text">{{ coursesNumber }}</p>
+                </div>
+            </div>
+            <br>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <h2>Students</h2>
+            <a href="{% url "createStudent" %}"><button type="button" class="btn btn-primary">Add Student</button></a>
+            <div class="card" style="width: fit-content;">
+                    <table class="table">
+                        <thead class="table-dark">
+                        <tr>
+                            <th scope="col">id</th>
+                            <th scope="col">name</th>
+                            <th scope="col">email</th>
+                            <th scope="col"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in students %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.email }}</td>
+                                <td>
+                                    <a href={% url "student" item.id %}><i class="fa-regular fa-calendar-days"></i></a>
+                                    <a href="{% url "editStudentInfo" item.id %}"><i class="fa-solid fa-user-pen" style="color: #223659;"></i></a>
+                                    <a href="{% url "deleteStudent" item.id %}"><i class="fa-solid fa-trash" style="color: #cc3838;"></i></a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>   
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h2>Schedules</h2>
+            <a href="{% url "createStudentReg" %}"><button type="button" class="btn btn-primary">Create Student Schedule</button></a>
+            <div class="card">
+                <table class="table">
+                    <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Student id</th>
+                        <th scope="col">Student name</th>
+                        <th scope="col">Course</th>
+                        <th scope="col">Instructor</th>
+                        <th scope="col">time</th>
+                        <th scope="col">days</th>
+                        <th scope="col">actions</th>
+                        <th scope="col">Course Details</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in studentsSchedule %}
+                        <tr>
+                            <td>{{ schedule.student.id }}</td>
+                            <td>{{ schedule.student.name }}</td>
+                            <td>{{ schedule.course.name }}</td>
+                            <td>{{ schedule.course.instructor }}</td>
+                            <td>{{ schedule.course.scheduleID.startTime }} to {{ schedule.course.scheduleID.endTime }}</td>
+                            <td>{{ schedule.course.scheduleID.days }}</td>
+                            <td>
+                                <a href="{% url "editStudentReg" schedule.id %}"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a href="{% url "deleteStudentReg" schedule.id %}"><i class="fa-solid fa-trash" style="color: #cc3838;"></i></i></a>
+                            </td>
+                            <td><a href="{% url "course" schedule.course.code %}"><i class="fa-solid fa-circle-info" style="color: #4d525b;"></i></i></a></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
