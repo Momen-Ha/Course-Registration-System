@@ -13,6 +13,26 @@ from .decorators import *
 from django.contrib.auth.models import Group
 # Create your views here.
 
+
+@forAdmins
+@login_required(login_url='login')    
+def home(request):
+    courses = Course.objects.all()
+    students = Student.objects.all()
+    student_regs = StudentReg.objects.select_related('student', 'course__scheduleID')
+    studentsNumber = students.count()
+    coursesNumber = courses.count()
+
+    context = {
+        "students":students,
+        "studentsSchedule": student_regs,
+        "studentsNumber": studentsNumber,
+        "coursesNumber": coursesNumber,
+    }
+    return render(request, 'courseApp/dashboard.html', context)
+
+
+
 @login_required(login_url='login')    
 def student(request, pk):
     student = get_object_or_404(Student, pk=pk)
@@ -56,6 +76,34 @@ def student(request, pk):
     }
     return render(request, 'courseApp/student.html', context)
 
+@login_required(login_url='login')
+def courses(request):
+
+    course = Course.objects.select_related().annotate(
+    registered_students_count=Count('studentreg', filter=Q(studentreg__completed=False))
+    ).order_by('code')
+
+    searchFilter = courseFilter(request.GET, queryset=course)
+    course = searchFilter.qs
+    context = {
+        "Course":course,
+        "searchFilter": searchFilter
+    }
+    return render(request, "courseApp/courses.html", context)
+
+
+@login_required(login_url='login')
+def courseSchedules(request):
+    schedules = CourseSchedule.objects.all()
+    return render(request, "courseApp/dashboard.html", schedules)
+
+
+@login_required(login_url='login')
+def course(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    return render(request, "courseApp/course.html", {"Course":course})
+
+
 @forAdmins
 @login_required(login_url='login')
 def editStudentInfo(request, pk):
@@ -83,82 +131,35 @@ def deleteStudent(request, pk):
 
 
 @forAdmins
-@login_required(login_url='login')    
-def home(request):
-    courses = Course.objects.all()
-    students = Student.objects.all()
-    student_regs = StudentReg.objects.select_related('student', 'course__scheduleID')
-    studentsNumber = students.count()
-    coursesNumber = courses.count()
-
-    context = {
-        "students":students,
-        "studentsSchedule": student_regs,
-        "studentsNumber": studentsNumber,
-        "coursesNumber": coursesNumber,
-    }
-    return render(request, 'courseApp/dashboard.html', context)
-    
-
-@login_required(login_url='login')
-def courseSchedules(request):
-    schedules = CourseSchedule.objects.all()
-    return render(request, "courseApp/dashboard.html", schedules)
-    
-
-
-@login_required(login_url='login')
-def courses(request):
-
-    course = Course.objects.select_related().annotate(
-    registered_students_count=Count('studentreg', filter=Q(studentreg__completed=False))
-    ).order_by('code')
-
-    searchFilter = courseFilter(request.GET, queryset=course)
-    course = searchFilter.qs
-    context = {
-        "Course":course,
-        "searchFilter": searchFilter
-    }
-    return render(request, "courseApp/courses.html", context)
-
-
-@login_required(login_url='login')
-def course(request, pk):
-    course = get_object_or_404(Course, pk=pk)
-    return render(request, "courseApp/course.html", {"Course":course})
-
-@login_required(login_url='login')
-def addCourse(request, student_id, course_code):
-    student = get_object_or_404(Student, pk=student_id)
-    course = get_object_or_404(Course, code=course_code)  # Corrected to use 'code' instead of 'pk'
-    
-    # Check if the student is already registered for the course
-    if StudentReg.objects.filter(student=student, course=course, completed=False).exists():
-        return redirect('student', pk=student_id)
-    
-    newCourseSchedule = course.scheduleID    
-    studentCourses = student.studentreg_set.filter(completed=False).select_related('course__scheduleID')
-    
-    for reg in studentCourses:
-        reg_course_schedule = reg.course.scheduleID
-        if reg_course_schedule.days == newCourseSchedule.days and \
-            (newCourseSchedule.startTime < reg_course_schedule.endTime and newCourseSchedule.endTime > reg_course_schedule.startTime):
-            messages.error(request, f'Time conflict with course: {reg.course.name}')
-            return render(request, 'courseApp/addCourse.html', {'student': student, 'course': course, 'conflict': True})
-    
+def createStudent(request):
+    form = createStudentForm()
     if request.method == 'POST':
-        # If no conflicts, add the course to the student's schedule
-        StudentReg.objects.create(student=student, course=course, completed=False)
-        messages.success(request, 'Course added successfully!')
-        return redirect('student', pk=student_id)
-    
-    context = {
-        'student': student,
-        'course': course,
-        'conflict': False
-    }
-    return render(request, 'courseApp/addCourse.html', context)
+        form = createStudentForm(request.POST)
+        if(form.is_valid()):
+            #create the user
+            name = form.cleaned_data['name']
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+            password = form.cleaned_data['password']
+
+            if User.objects.filter(email=email).exists():
+                form.add_error('email', 'Email already exists')
+            else:
+
+                # Create the user
+                user = User.objects.create_user(username=username, password=password, email=email)
+                # Create the student and link to the user
+                student = Student.objects.create(user=user, name=name, email=email, password=password)
+                group = Group.objects.get(name="students")
+                user.groups.add(group)
+                messages.success(request, f'Student {name} created successfully')
+                return redirect('/')
+    else:
+        form = createStudentForm()
+    context = {"form": form}
+    return render(request, "courseApp/createStudent.html", context)
+
+
 
 
 @forAdmins
@@ -196,6 +197,40 @@ def deleteStudentReg(request, pk):
     context={"reg": reg}
     return render(request, "courseApp/deleteRegistration.html", context)
 
+
+
+@login_required(login_url='login')
+def addCourse(request, student_id, course_code):
+    student = get_object_or_404(Student, pk=student_id)
+    course = get_object_or_404(Course, code=course_code) 
+    
+    # Check if the student is already registered for the course
+    if StudentReg.objects.filter(student=student, course=course, completed=False).exists():
+        return redirect('student', pk=student_id)
+    
+    newCourseSchedule = course.scheduleID    
+    studentCourses = student.studentreg_set.filter(completed=False).select_related('course__scheduleID')
+    
+    for reg in studentCourses:
+        reg_course_schedule = reg.course.scheduleID
+        if reg_course_schedule.days == newCourseSchedule.days and \
+            (newCourseSchedule.startTime < reg_course_schedule.endTime and newCourseSchedule.endTime > reg_course_schedule.startTime):
+            messages.error(request, f'Time conflict with course: {reg.course.name}')
+            return render(request, 'courseApp/addCourse.html', {'student': student, 'course': course, 'conflict': True})
+    
+    if request.method == 'POST':
+        # If no conflicts, add the course to the student's schedule
+        StudentReg.objects.create(student=student, course=course, completed=False)
+        messages.success(request, 'Course added successfully!')
+        return redirect('student', pk=student_id)
+    
+    context = {
+        'student': student,
+        'course': course,
+        'conflict': False
+    }
+    return render(request, 'courseApp/addCourse.html', context)
+
 @forAdmins
 @login_required(login_url='login')
 def deleteCourse(request, pk):
@@ -210,34 +245,6 @@ def deleteCourse(request, pk):
     }
     return render(request, 'courseApp/deleteCourse.html', context)
 
-@forAdmins
-def createStudent(request):
-    form = createStudentForm()
-    if request.method == 'POST':
-        form = createStudentForm(request.POST)
-        if(form.is_valid()):
-            #create the user
-            name = form.cleaned_data['name']
-            username = form.cleaned_data['username']
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-
-            if User.objects.filter(email=email).exists():
-                form.add_error('email', 'Email already exists')
-            else:
-
-                # Create the user
-                user = User.objects.create_user(username=username, password=password, email=email)
-                # Create the student and link to the user
-                student = Student.objects.create(user=user, name=name, email=email, password=password)
-                group = Group.objects.get(name="students")
-                user.groups.add(group)
-                messages.success(request, f'Student {name} created successfully')
-                return redirect('/')
-    else:
-        form = createStudentForm()
-    context = {"form": form}
-    return render(request, "courseApp/createStudent.html", context)
 
 @forAdmins
 @login_required(login_url='login')
@@ -264,6 +271,8 @@ def createCourse(request):
     }
     return render(request, 'courseApp/createCourse.html', context)
         
+
+
 @forAdmins
 @login_required(login_url='login')
 def editCourse(request, pk):
@@ -291,6 +300,9 @@ def editCourse(request, pk):
         'schedule_form': schedule_form,
     }
     return render(request, "courseApp/createCourse.html", context)
+
+
+
 @notLoggedUser
 def register(request):
     form = createNewUser()
@@ -315,6 +327,7 @@ def register(request):
     return render(request, 'courseApp/register.html', context)
     
 
+
 @notLoggedUser
 def UserLogin(request):
     if request.method == 'POST':
@@ -328,6 +341,7 @@ def UserLogin(request):
             messages.info(request, "Invalid username or password.")
     return render(request, "courseApp/login.html")
  
+
 
 @login_required(login_url='login')
 def userLogout(request):

@@ -33,5 +33,8 @@ def forAdmins(view_func):
             return view_func(request, *args, **kwargs)
         elif group == 'students':
             student = request.user.student
-            return redirect('student', student.pk)
+            return redirect('student', student.pk) 
+        else:
+            return redirect('login') 
+        
     return wrapper_func
