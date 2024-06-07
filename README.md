@@ -1,6 +1,8 @@
 📚 Course Registration System
 This project is a Course Registration System built using Django, created for a web programming class. It allows students to register for courses, view their registered and completed courses, and view available courses. It also includes an admin interface for managing courses and student registrations.
 
+Note: screenshots of project in screenshots folder.
+
 Features
 🧑‍🎓 Student Features
 🔐 User Authentication: Students can log in or create an account.
